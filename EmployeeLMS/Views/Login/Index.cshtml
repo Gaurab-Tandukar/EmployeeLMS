@@ -1,0 +1,32 @@
+﻿@{
+    ViewData["Title"] = "Login";
+}
+
+<div class="d-flex align-items-center justify-content-center" style="min-height: calc(100vh - 56px - 60px);">
+    <div class="card shadow-sm border-0 rounded-4 p-4" style="width: 100%; max-width: 420px;">
+        <div class="card-body">
+            <h1 class="h3 fw-bold mb-1">Welcome Back</h1>
+            <p class="text-muted mb-4">Continue with Library Management System</p>
+
+            <form asp-controller="Login" asp-action="Index" method="post">
+                <div class="mb-3">
+                    <label for="email" class="form-label">Email</label>
+                    <input type="email" class="form-control rounded-3" id="email" placeholder="employee@gmail.com">
+                </div>
+
+                <div class="mb-4">
+                    <label for="password" class="form-label">Password</label>
+                    <input type="password" class="form-control rounded-3" id="password" placeholder="*******">
+                </div>
+                
+                <div class="d-grid">
+                    <button type="submit" class="btn btn-dark rounded-3">Login</button>
+                </div>
+                <p class="text-center text-muted mb-0">
+                    Don't have an account?
+                    <a asp-controller="Register" asp-action="" class="text-decoration-none fw-semibold">Register</a>
+                </p>
+            </form>
+        </div>
+    </div>
+</div>
