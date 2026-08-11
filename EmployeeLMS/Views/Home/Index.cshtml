@@ -4,5 +4,15 @@
 
 <div class="text-center">
     <h1 class="display-4">Welcome</h1>
-    <p>Learn about <a href="https://learn.microsoft.com/aspnet/core">building Web apps with ASP.NET Core</a>.</p>
+    <p>Employee Library Management System</p>
+    @if (User.Identity.IsAuthenticated)
+    {
+        <form asp-controller="Category" asp-action="Index" method="post" class="d-inline">
+            <button type="submit" class="btn btn-outline-secondary rounded-3 px-4">Category</button>
+        </form>
+    }
+    else
+    {
+        <p>Please <a asp-controller="Login" asp-action="Index">login</a> or <a asp-controller="Register" asp-action="Index">register</a>.</p>
+    }
 </div>

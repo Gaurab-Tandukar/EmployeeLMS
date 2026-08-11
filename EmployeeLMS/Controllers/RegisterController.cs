@@ -39,7 +39,7 @@ namespace EmployeeLMS.Controllers
             }
 
             TempData["SuccessMessage"] = "Account created successfully. Please log in.";
-            return RedirectToAction("Login", "Login");
+            return RedirectToAction("Index", "Login");
         }
     }
 }
