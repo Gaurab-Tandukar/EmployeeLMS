@@ -8,8 +8,6 @@ namespace EmployeeLMS.Models
         public int StaffID { get; set; }
         [Required]
         public string UserRole { get; set; }
-        [Required]
-        public String HashPassword { get; set; }
 
         // Required side of the 1:1 relationship with Employee
         public virtual Employee Employee { get; set; } = null!;

@@ -1,4 +1,5 @@
-﻿using EmployeeLMS.Services.Interfaces;
+﻿using EmployeeLMS.DTO;
+using EmployeeLMS.Services.Interfaces;
 using Microsoft.AspNetCore.Authentication;
 using Microsoft.AspNetCore.Authentication.Cookies;
 using Microsoft.AspNetCore.Authorization;
@@ -7,7 +8,6 @@ using System.Security.Claims;
 
 namespace EmployeeLMS.Controllers
 {
-    [AllowAnonymous]
     public class LoginController : Controller
     {
         private readonly IAuthService _authService;
@@ -18,21 +18,28 @@ namespace EmployeeLMS.Controllers
         }
 
         [HttpGet]
+        [AllowAnonymous]
         public IActionResult Index()
         {
-            return View();
+            return View(new LoginDTO());
         }
 
         [HttpPost]
         [ValidateAntiForgeryToken]
-        public async Task<IActionResult> Index(string email, string password)
+        [AllowAnonymous]
+        public async Task<IActionResult> Index(LoginDTO model)
         {
-            var user = await _authService.LoginAsync(email, password);
+            if (!ModelState.IsValid)
+            {
+                return View(model);
+            }
+
+            var user = await _authService.LoginAsync(model.Email, model.Password);
 
             if (user == null)
             {
                 ModelState.AddModelError(string.Empty, "Invalid email or password.");
-                return View();
+                return View(model);
             }
 
             var claims = new List<Claim>
@@ -52,7 +59,7 @@ namespace EmployeeLMS.Controllers
                 principal,
                 new AuthenticationProperties
                 {
-                    IsPersistent = true, // "remember me" behavior — cookie survives browser close
+                    IsPersistent = true,
                     ExpiresUtc = DateTimeOffset.UtcNow.AddHours(8)
                 });
 
@@ -69,6 +76,7 @@ namespace EmployeeLMS.Controllers
         }
 
         [HttpGet]
+        [AllowAnonymous]
         public IActionResult AccessDenied()
         {
             return View();

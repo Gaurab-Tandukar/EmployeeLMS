@@ -15,6 +15,8 @@ namespace EmployeeLMS.Models
         [Required]
         public string PhoneNumber { get; set; }
 
+        [Required]
+        public string HashPassword { get; set; }
         // Optional side of the 1:1 relationship with User
         public virtual User? User { get; set; }
 

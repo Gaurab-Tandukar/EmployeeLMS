@@ -4,6 +4,7 @@ using EmployeeLMS.Models;
 using EmployeeLMS.Repositories.Interfaces;
 using EmployeeLMS.Services.Interfaces;
 using Microsoft.AspNetCore.Identity;
+using Microsoft.EntityFrameworkCore;
 
 namespace EmployeeLMS.Services.Implementation
 {
@@ -12,7 +13,7 @@ namespace EmployeeLMS.Services.Implementation
         private readonly IEmployeeRepository _employeeRepository;
         private readonly IGenericRepository<User> _userRepository;
         private readonly LibraryDbContext _context;
-        private readonly PasswordHasher<User> _passwordHasher = new();
+        private readonly PasswordHasher<Employee> _passwordHasher = new();   // CHANGED: hashes Employee now
 
         public AuthService(
             IEmployeeRepository employeeRepository,
@@ -42,21 +43,12 @@ namespace EmployeeLMS.Services.Implementation
                     Email = dto.Email,
                     PhoneNumber = dto.PhoneNumber
                 };
+                employee.HashPassword = _passwordHasher.HashPassword(employee, dto.Password);
 
                 await _employeeRepository.AddAsync(employee);
-                await _employeeRepository.SaveChangesAsync(); // flush so employee.StaffID is populated
+                await _employeeRepository.SaveChangesAsync();
 
-                var user = new User
-                {
-                    StaffID = employee.StaffID,
-                    UserRole = "Staff"
-                };
-                user.HashPassword = _passwordHasher.HashPassword(user, dto.Password);
-
-                await _userRepository.AddAsync(user);
-                await _userRepository.SaveChangesAsync();
-
-                await transaction.CommitAsync();
+                await transaction.CommitAsync();   // ADDED — this was missing
                 return (true, null);
             }
             catch (Exception)
@@ -71,25 +63,29 @@ namespace EmployeeLMS.Services.Implementation
         {
             var employee = await _employeeRepository.GetByEmailAsync(email);
 
-            if (employee?.User == null)
+            if (employee == null)
             {
-                return null; // no account with this email, or employee has no linked User
+                return null; // no account with this email
             }
 
             var result = _passwordHasher.VerifyHashedPassword(
-                employee.User, employee.User.HashPassword, password);
+                employee, employee.HashPassword, password);   // CHANGED: verify against Employee
 
             if (result == PasswordVerificationResult.Failed)
             {
                 return null;
             }
 
-            // If the hasher flags that the stored hash uses outdated parameters, re-hash and save.
             if (result == PasswordVerificationResult.SuccessRehashNeeded)
             {
-                employee.User.HashPassword = _passwordHasher.HashPassword(employee.User, password);
-                _userRepository.Update(employee.User);
-                await _userRepository.SaveChangesAsync();
+                employee.HashPassword = _passwordHasher.HashPassword(employee, password);
+                _employeeRepository.Update(employee);
+                await _employeeRepository.SaveChangesAsync();
+            }
+
+            if (employee.User == null)
+            {
+                return null; // authenticated, but no role assigned — no system access
             }
 
             return employee.User;
@@ -102,26 +98,27 @@ namespace EmployeeLMS.Services.Implementation
         }
 
         // ---------- Change password ----------
+        // CHANGED: takes staffId now, since the password lives on Employee
         public async Task<(bool Success, string? ErrorMessage)> ChangePasswordAsync(
-            int userId, string currentPassword, string newPassword)
+            int staffId, string currentPassword, string newPassword)
         {
-            var user = await _userRepository.GetByIdAsync(userId);
+            var employee = await _employeeRepository.GetByIdAsync(staffId);
 
-            if (user == null)
+            if (employee == null)
             {
-                return (false, "User not found.");
+                return (false, "Employee not found.");
             }
 
-            var result = _passwordHasher.VerifyHashedPassword(user, user.HashPassword, currentPassword);
+            var result = _passwordHasher.VerifyHashedPassword(employee, employee.HashPassword, currentPassword);
 
             if (result == PasswordVerificationResult.Failed)
             {
                 return (false, "Current password is incorrect.");
             }
 
-            user.HashPassword = _passwordHasher.HashPassword(user, newPassword);
-            _userRepository.Update(user);
-            await _userRepository.SaveChangesAsync();
+            employee.HashPassword = _passwordHasher.HashPassword(employee, newPassword);
+            _employeeRepository.Update(employee);
+            await _employeeRepository.SaveChangesAsync();
 
             return (true, null);
         }
@@ -136,6 +133,66 @@ namespace EmployeeLMS.Services.Implementation
         {
             var employee = await _employeeRepository.GetByEmailAsync(email);
             return employee?.User;
+        }
+
+        // ---------- Assign role (Admin action) ----------
+        public async Task<(bool Success, string? ErrorMessage)> AssignRoleAsync(int staffId, string role, string? adminName = null)
+        {
+            var employee = await _employeeRepository.GetByIdAsync(staffId);
+
+            if (employee == null)
+            {
+                return (false, "Employee not found.");
+            }
+
+            if (role == "Admin" && string.IsNullOrWhiteSpace(adminName))
+            {
+                return (false, "Admin name is required when assigning the Admin role.");
+            }
+
+            using var transaction = await _context.Database.BeginTransactionAsync();
+            try
+            {
+                var user = await _context.Users
+                    .Include(u => u.Admins)
+                    .FirstOrDefaultAsync(u => u.StaffID == staffId);
+
+                if (user == null)
+                {
+                    user = new User
+                    {
+                        StaffID = staffId,
+                        UserRole = role
+                    };
+                    await _userRepository.AddAsync(user);
+                    await _userRepository.SaveChangesAsync(); // flush so UserID is populated
+                }
+                else
+                {
+                    user.UserRole = role;
+                    _userRepository.Update(user);
+                    await _userRepository.SaveChangesAsync();
+                }
+
+                // If promoting to Admin, also create the Admin row (if it doesn't already exist)
+                if (role == "Admin" && !user.Admins.Any())
+                {
+                    _context.Admins.Add(new Admin
+                    {
+                        UserID = user.UserID,
+                        Name = adminName!
+                    });
+                    await _context.SaveChangesAsync();
+                }
+
+                await transaction.CommitAsync();
+                return (true, null);
+            }
+            catch (Exception)
+            {
+                await transaction.RollbackAsync();
+                return (false, "Role assignment failed. Please try again.");
+            }
         }
     }
 }

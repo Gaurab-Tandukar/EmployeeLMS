@@ -18,5 +18,8 @@ namespace EmployeeLMS.Services.Interfaces
         // Session/identity helpers
         Task<User?> GetUserByIdAsync(int userId);
         Task<User?> GetUserByEmailAsync(string email);
+
+        // Admin role assignment
+        Task<(bool Success, string? ErrorMessage)> AssignRoleAsync(int staffId, string role, string? adminName = null);
     }
 }

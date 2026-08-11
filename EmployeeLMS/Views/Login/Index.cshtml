@@ -1,4 +1,5 @@
-﻿@{
+﻿@model EmployeeLMS.DTO.LoginDTO
+@{
     ViewData["Title"] = "Login";
 }
 
@@ -10,14 +11,14 @@
 
             <form asp-controller="Login" asp-action="Index" method="post" id="loginForm" novalidate>
                 <div class="mb-3">
-                    <label for="email" class="form-label">Email</label>
-                    <input type="email" name="email" class="form-control rounded-3" id="email" placeholder="employee@gmail.com">
+                    <label asp-for="Email" class="form-label">Email</label>
+                    <input asp-for="Email" class="form-control rounded-3" placeholder="employee@gmail.com">
                     <div class="invalid-feedback">Enter a valid email address.</div>
                 </div>
 
                 <div class="mb-4">
-                    <label for="password" class="form-label">Password</label>
-                    <input type="password" name="password" class="form-control rounded-3" id="password" placeholder="*******">
+                    <label asp-for="Password" class="form-label">Password</label>
+                    <input asp-for="Password" type="password" class="form-control rounded-3" placeholder="*******">
                     <div class="invalid-feedback">Password is required.</div>
                 </div>
 
@@ -33,23 +34,41 @@
     </div>
 </div>
 
+<!-- Toast container -->
+<div class="toast-container position-fixed bottom-0 end-0 p-3" style="z-index: 1080;">
+    <div id="backendToast" class="toast align-items-center border-0" role="alert" aria-live="assertive" aria-atomic="true">
+        <div class="d-flex">
+            <div class="toast-body" id="backendToastBody"></div>
+            <button type="button" class="btn-close btn-close-white me-2 m-auto" data-bs-dismiss="toast" aria-label="Close"></button>
+        </div>
+    </div>
+</div>
+
 <style>
     #submitBtn.btn-blocked {
         background-color: #000;
         opacity: 0.6;
         cursor: not-allowed;
     }
+
+    #backendToast.text-bg-danger {
+        background-color: #dc3545 !important;
+        color: #fff;
+    }
 </style>
 
 @section Scripts {
+    @{
+        await Html.RenderPartialAsync("_ValidationScriptsPartial");
+    }
     <script>
         (function() {
             const form = document.getElementById('loginForm');
             const submitBtn = document.getElementById('submitBtn');
 
             const rules = {
-                email: v => /^[^\s@@]+@@[^\s@@]+\.[^\s@@]+$/.test(v.trim()),
-                password: v => v.trim().length > 0
+                Email: v => /^[^\s@@]+@@[^\s@@]+\.[^\s@@]+$/.test(v.trim()),
+                Password: v => v.trim().length > 0
             };
 
             const inputs = {};
@@ -98,6 +117,28 @@
             });
 
             updateButtonState();
+        })();
+
+        // Backend message toast (invalid credentials, etc.)
+        (function() {
+            const errors = @Html.Raw(Json.Serialize(
+                    ViewData.ModelState.IsValid ? null : ViewData.ModelState.Values
+                            .SelectMany(v => v.Errors)
+                            .Select(e => e.ErrorMessage)
+                            .FirstOrDefault()
+                            ));
+
+            if (errors) {
+                const toastEl = document.getElementById('backendToast');
+                const toastBody = document.getElementById('backendToastBody');
+
+                toastEl.classList.remove('text-bg-danger');
+                toastEl.classList.add('text-bg-danger');
+                toastBody.textContent = errors;
+
+                const toast = new bootstrap.Toast(toastEl, { delay: 4000 });
+                toast.show();
+            }
         })();
     </script>
 }

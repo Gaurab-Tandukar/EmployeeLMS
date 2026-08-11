@@ -38,6 +38,10 @@ namespace EmployeeLMS.Data
                     .IsRequired()
                     .HasMaxLength(255);
 
+                entity.Property(e => e.HashPassword)
+                    .IsRequired()
+                    .HasMaxLength(255);
+
                 // Prevent duplicate employee accounts by email
                 entity.HasIndex(e => e.Email)
                     .IsUnique();
@@ -51,10 +55,6 @@ namespace EmployeeLMS.Data
                 entity.Property(u => u.UserRole)
                     .IsRequired()
                     .HasMaxLength(50);
-
-                entity.Property(u => u.HashPassword)
-                    .IsRequired()
-                    .HasMaxLength(255); // hashed password (BCrypt output)
 
                 // Enforce true one-to-one: no two Users can share the same StaffID
                 entity.HasIndex(u => u.StaffID)
