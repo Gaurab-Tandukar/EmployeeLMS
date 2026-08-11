@@ -126,12 +126,23 @@
                         </li>
                     </ul>
                     <div class="d-flex gap-2">
-                        <a class="btn btn-primary rounded-3 px-4" asp-controller="Login" asp-action="">Login</a>
-                        <a class="btn btn-secondary rounded-3 px-4" asp-controller="Register" asp-action="">Register</a>
+                        @if (User.Identity?.IsAuthenticated == true)
+                        {
+                            <span class="text-dark me-2 align-content-center">Hi, @User.FindFirst(System.Security.Claims.ClaimTypes.GivenName)?.Value</span>
+                            <form asp-controller="Login" asp-action="Logout" method="post" class="d-inline">
+                                <button type="submit" class="btn btn-outline-secondary rounded-3 px-4">Logout</button>
+                            </form>
+                        }
+                        else
+                        {
+                            <a class="btn btn-primary rounded-3 px-4" asp-controller="Login" asp-action="Index">Login</a>
+                            <a class="btn btn-secondary rounded-3 px-4" asp-controller="Register" asp-action="Index">Register</a>
+                        }
                     </div>
                 </div>
             </div>
         </nav>
+ 
     </header>
     <div class="container-fluid bg-light">
         <main role="main" class="pb-3">

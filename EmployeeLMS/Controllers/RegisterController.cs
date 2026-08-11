@@ -1,9 +1,11 @@
 ﻿using EmployeeLMS.DTO;
 using EmployeeLMS.Services.Interfaces;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 
 namespace EmployeeLMS.Controllers
 {
+    [AllowAnonymous]
     public class RegisterController : Controller
     {
         private readonly IAuthService _authService;
