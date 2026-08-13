@@ -10,6 +10,11 @@
         <form asp-controller="Category" asp-action="Index" method="post" class="d-inline">
             <button type="submit" class="btn btn-outline-secondary rounded-3 px-4">Category</button>
         </form>
+
+        @if (User.IsInRole("Admin"))
+        {
+            <a asp-controller="Admin" asp-action="Index" class="btn btn-outline-dark rounded-3 px-4 ms-2">Admin Panel</a>
+        }
     }
     else
     {

@@ -7,7 +7,7 @@ namespace EmployeeLMS.Services.Interfaces
     {
         // Core auth
         Task<(bool Success, string? ErrorMessage)> RegisterAsync(RegistrationDTO dto);
-        Task<User?> LoginAsync(string email, string password);
+        Task<(User? User, string? ErrorMessage)> LoginAsync(string email, string password);
 
         // Supporting checks
         Task<bool> EmailExistsAsync(string email);
@@ -21,5 +21,10 @@ namespace EmployeeLMS.Services.Interfaces
 
         // Admin role assignment
         Task<(bool Success, string? ErrorMessage)> AssignRoleAsync(int staffId, string role, string? adminName = null);
+
+        // Admin revoke role assignment
+        Task<(bool Success, string? ErrorMessage)> RevokeAccessAsync(int staffId);
+
+        Task<bool> HasAccessAsync(int staffId);
     }
 }

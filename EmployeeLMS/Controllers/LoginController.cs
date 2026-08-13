@@ -34,17 +34,18 @@ namespace EmployeeLMS.Controllers
                 return View(model);
             }
 
-            var user = await _authService.LoginAsync(model.Email, model.Password);
+            var (user, errorMessage) = await _authService.LoginAsync(model.Email, model.Password);
 
             if (user == null)
             {
-                ModelState.AddModelError(string.Empty, "Invalid email or password.");
+                ModelState.AddModelError(string.Empty, errorMessage ?? "Invalid email or password.");
                 return View(model);
             }
 
             var claims = new List<Claim>
             {
                 new Claim(ClaimTypes.NameIdentifier, user.UserID.ToString()),
+                new System.Security.Claims.Claim("StaffID", user.StaffID.ToString()),
                 new Claim(ClaimTypes.Email, user.Employee.Email),
                 new Claim(ClaimTypes.GivenName, user.Employee.FirstName),
                 new Claim(ClaimTypes.Surname, user.Employee.LastName),

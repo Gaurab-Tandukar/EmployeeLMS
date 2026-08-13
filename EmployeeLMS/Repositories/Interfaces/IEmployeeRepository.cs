@@ -6,5 +6,7 @@ namespace EmployeeLMS.Repositories.Interfaces
     {
         Task<Employee?> GetByEmailAsync(string email);
         Task<bool> EmailExistsAsync(string email);
+
+        Task<IEnumerable<Employee>> GetAllWithUserAsync();
     }
 }

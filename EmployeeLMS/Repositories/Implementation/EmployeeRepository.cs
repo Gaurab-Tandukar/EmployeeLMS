@@ -25,5 +25,12 @@ namespace EmployeeLMS.Repositories.Implementation
         {
             return await _context.Employees.AnyAsync(e => e.Email == email);
         }
+
+        public async Task<IEnumerable<Employee>> GetAllWithUserAsync()
+        {
+            return await _context.Employees
+                .Include(e => e.User)
+                .ToListAsync();
+        }
     }
 }

@@ -1,0 +1,48 @@
+﻿@model IEnumerable<EmployeeLMS.Models.Employee>
+@{
+    ViewData["Title"] = "Manage Employees";
+}
+
+<div class="container py-4">
+    <h1 class="h3 fw-bold mb-4">Manage Employee Access</h1>
+
+    <table class="table align-middle">
+        <thead>
+            <tr>
+                <th>Name</th>
+                <th>Email</th>
+                <th>Status</th>
+                <th>Access</th>
+            </tr>
+        </thead>
+        <tbody>
+            @foreach (var employee in Model)
+            {
+                <tr>
+                    <td>@employee.FirstName @employee.LastName</td>
+                    <td>@employee.Email</td>
+                    <td>
+                        @if (employee.User == null)
+                        {
+                            <span class="badge text-bg-secondary">Non-user</span>
+                        }
+                        else
+                        {
+                            <span class="badge text-bg-success">User (@employee.User.UserRole)</span>
+                        }
+                    </td>
+                    <td>
+                        <form asp-controller="Admin" asp-action="SetAccess" method="post" class="d-flex gap-2 align-items-center access-form">
+                            <input type="hidden" name="staffId" value="@employee.StaffID" />
+                            <select name="isUser" class="form-select form-select-sm">
+                                <option value="true" selected="@(employee.User != null)">User</option>
+                                <option value="false" selected="@(employee.User == null)">Non-user</option>
+                            </select>
+                            <button type="submit" class="btn btn-sm btn-dark">Save</button>
+                        </form>
+                    </td>
+                </tr>
+            }
+        </tbody>
+    </table>
+</div>

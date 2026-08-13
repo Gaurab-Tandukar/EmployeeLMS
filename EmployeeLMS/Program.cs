@@ -3,6 +3,7 @@ using EmployeeLMS.Repositories.Implementation;
 using EmployeeLMS.Repositories.Interfaces;
 using EmployeeLMS.Services.Implementation;
 using EmployeeLMS.Services.Interfaces;
+using Microsoft.AspNetCore.Authentication;
 using Microsoft.AspNetCore.Authentication.Cookies;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc.Authorization;
@@ -37,6 +38,29 @@ builder.Services.AddAuthentication(CookieAuthenticationDefaults.AuthenticationSc
         options.SlidingExpiration = true;
         options.Cookie.HttpOnly = true;
         options.Cookie.SecurePolicy = CookieSecurePolicy.Always;
+
+        options.Events = new CookieAuthenticationEvents
+        {
+            OnValidatePrincipal = async context =>
+            {
+                var staffIdClaim = context.Principal?.FindFirst("StaffID");
+                if (staffIdClaim == null || !int.TryParse(staffIdClaim.Value, out var staffId))
+                {
+                    context.RejectPrincipal();
+                    await context.HttpContext.SignOutAsync(CookieAuthenticationDefaults.AuthenticationScheme);
+                    return;
+                }
+
+                var authService = context.HttpContext.RequestServices.GetRequiredService<IAuthService>();
+                var stillHasAccess = await authService.HasAccessAsync(staffId);
+
+                if (!stillHasAccess)
+                {
+                    context.RejectPrincipal();
+                    await context.HttpContext.SignOutAsync(CookieAuthenticationDefaults.AuthenticationScheme);
+                }
+            }
+        };
     });
 
 

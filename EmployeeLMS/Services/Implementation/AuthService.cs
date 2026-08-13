@@ -59,21 +59,20 @@ namespace EmployeeLMS.Services.Implementation
         }
 
         // ---------- Login ----------
-        public async Task<User?> LoginAsync(string email, string password)
+        public async Task<(User? User, string? ErrorMessage)> LoginAsync(string email, string password)
         {
             var employee = await _employeeRepository.GetByEmailAsync(email);
 
             if (employee == null)
             {
-                return null; // no account with this email
+                return (null, "Invalid email or password.");
             }
 
-            var result = _passwordHasher.VerifyHashedPassword(
-                employee, employee.HashPassword, password);   // CHANGED: verify against Employee
+            var result = _passwordHasher.VerifyHashedPassword(employee, employee.HashPassword, password);
 
             if (result == PasswordVerificationResult.Failed)
             {
-                return null;
+                return (null, "Invalid email or password.");
             }
 
             if (result == PasswordVerificationResult.SuccessRehashNeeded)
@@ -85,10 +84,10 @@ namespace EmployeeLMS.Services.Implementation
 
             if (employee.User == null)
             {
-                return null; // authenticated, but no role assigned — no system access
+                return (null, "Your account has not been granted access yet. Please contact an administrator.");
             }
 
-            return employee.User;
+            return (employee.User, null);
         }
 
         // ---------- Email check ----------
@@ -193,6 +192,46 @@ namespace EmployeeLMS.Services.Implementation
                 await transaction.RollbackAsync();
                 return (false, "Role assignment failed. Please try again.");
             }
+        }
+
+        // ---------- Revoke access (Admin action) ----------
+        public async Task<(bool Success, string? ErrorMessage)> RevokeAccessAsync(int staffId)
+        {
+            using var transaction = await _context.Database.BeginTransactionAsync();
+            try
+            {
+                var user = await _context.Users
+                    .Include(u => u.Admins)
+                    .FirstOrDefaultAsync(u => u.StaffID == staffId);
+
+                if (user == null)
+                {
+                    return (true, null); // already not a user — nothing to do
+                }
+
+                if (user.Admins.Any())
+                {
+                    _context.Admins.RemoveRange(user.Admins);
+                }
+
+                _context.Users.Remove(user);
+                await _context.SaveChangesAsync();
+
+                await transaction.CommitAsync();
+                return (true, null);
+            }
+            catch (Exception)
+            {
+                await transaction.RollbackAsync();
+                return (false, "Failed to revoke access. Please try again.");
+            }
+
+        }
+
+        // ---------- Check current access (used by cookie validation) ----------
+        public async Task<bool> HasAccessAsync(int staffId)
+        {
+            return await _context.Users.AnyAsync(u => u.StaffID == staffId);
         }
     }
 }
